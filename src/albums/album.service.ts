@@ -2,73 +2,52 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
-  Inject,
-  forwardRef,
 } from '@nestjs/common';
-import { v4 as uuidv4, validate as isUUID } from 'uuid';
-import { FavoritesService } from '../favorites/favorites.service';
-
-export interface Album {
-  id: string;
-  name: string;
-  year: number;
-  artistId: string;
-}
+import { v4 as uuidv4, validate as uuidValidate } from 'uuid';
+import { Album } from './album.interface';
+import { CreateAlbumDto } from './create-album.dto';
+import { UpdateAlbumDto } from './update-album.dto';
 
 @Injectable()
 export class AlbumService {
   private albums: Album[] = [];
-
-  constructor(
-    @Inject(forwardRef(() => FavoritesService))
-    private readonly favoritesService: FavoritesService,
-  ) {}
 
   findAll(): Album[] {
     return this.albums;
   }
 
   findOne(id: string): Album {
-    if (!isUUID(id)) {
-      throw new BadRequestException('Invalid album id');
-    }
+    if (!uuidValidate(id)) throw new BadRequestException('Invalid album id');
     const album = this.albums.find((a) => a.id === id);
-    if (!album) {
-      throw new NotFoundException('Album not found');
-    }
+    if (!album) throw new NotFoundException('Album not found');
     return album;
   }
 
-  create(data: Omit<Album, 'id'>): Album {
+  create(dto: CreateAlbumDto): Album {
+    if (!dto.name || !dto.year)
+      throw new BadRequestException('Missing required fields');
     const newAlbum: Album = {
       id: uuidv4(),
-      ...data,
+      name: dto.name,
+      artistId: dto.artistId ?? null,
+      year: dto.year,
     };
     this.albums.push(newAlbum);
     return newAlbum;
   }
 
-  update(id: string, data: Partial<Omit<Album, 'id'>>): Album {
-    if (!isUUID(id)) {
-      throw new BadRequestException('Invalid album id');
-    }
-    const index = this.albums.findIndex((a) => a.id === id);
-    if (index === -1) {
-      throw new NotFoundException('Album not found');
-    }
-    this.albums[index] = { ...this.albums[index], ...data };
-    return this.albums[index];
+  update(id: string, dto: UpdateAlbumDto): Album {
+    const album = this.findOne(id);
+    if (dto.name !== undefined) album.name = dto.name;
+    if (dto.artistId !== undefined) album.artistId = dto.artistId;
+    if (dto.year !== undefined) album.year = dto.year;
+    return album;
   }
 
   delete(id: string): void {
-    if (!isUUID(id)) {
-      throw new BadRequestException('Invalid album id');
-    }
+    if (!uuidValidate(id)) throw new BadRequestException('Invalid album id');
     const index = this.albums.findIndex((a) => a.id === id);
-    if (index === -1) {
-      throw new NotFoundException('Album not found');
-    }
+    if (index === -1) throw new NotFoundException('Album not found');
     this.albums.splice(index, 1);
-    this.favoritesService.removeIdFromAllUsers('album', id);
   }
 }

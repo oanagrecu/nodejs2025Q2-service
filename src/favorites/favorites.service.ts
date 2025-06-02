@@ -99,7 +99,7 @@ export class FavoritesService {
     const favs = this.ensureUserFavorites(userId);
     const artists = favs.artists.map((id) => this.artistService.findById(id));
     const albums = favs.albums.map((id) => this.albumService.findOne(id));
-    const tracks = favs.tracks.map((id) => this.trackService.findOne(id));
+    const tracks = favs.tracks.map((id) => this.trackService.findOneById(id));
 
     return { artists, albums, tracks };
   }
@@ -158,7 +158,7 @@ export class FavoritesService {
     this.validateUUID(userId, 'userId');
     this.validateUUID(id, 'trackId');
     this.validateEntityExists(
-      this.trackService.findOne.bind(this.trackService),
+      this.trackService.findOneById.bind(this.trackService),
       id,
       'Track',
     );

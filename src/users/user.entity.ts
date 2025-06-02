@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import { User } from './users.interface';
+import { User } from './user.interface';
 
 export class UserEntity implements User {
   id: string;

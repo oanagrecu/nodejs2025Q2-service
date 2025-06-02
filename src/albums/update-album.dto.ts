@@ -1,14 +1,22 @@
-import { IsString, IsOptional, IsUUID, IsInt } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsUUID,
+  IsInt,
+  IsOptional,
+} from 'class-validator';
 
 export class UpdateAlbumDto {
-  @IsString()
   @IsOptional()
+  @IsString({ message: 'name must be a string' })
+  @IsNotEmpty({ message: 'name should not be empty' })
   name?: string;
 
-  @IsInt()
   @IsOptional()
+  @IsInt({ message: 'year must be an integer' })
   year?: number;
 
-  @IsUUID()
-  artistId: string;
+  @IsOptional()
+  @IsUUID('4', { message: 'artistId must be a valid UUID' })
+  artistId?: string;
 }
