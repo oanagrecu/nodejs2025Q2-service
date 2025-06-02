@@ -1,4 +1,3 @@
-// src/artist/artist.controller.ts
 import {
   Controller,
   Get,

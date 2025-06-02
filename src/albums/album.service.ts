@@ -2,8 +2,11 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  Inject,
+  forwardRef,
 } from '@nestjs/common';
 import { v4 as uuidv4, validate as isUUID } from 'uuid';
+import { FavoritesService } from '../favorites/favorites.service';
 
 export interface Album {
   id: string;
@@ -15,6 +18,11 @@ export interface Album {
 @Injectable()
 export class AlbumService {
   private albums: Album[] = [];
+
+  constructor(
+    @Inject(forwardRef(() => FavoritesService))
+    private readonly favoritesService: FavoritesService,
+  ) {}
 
   findAll(): Album[] {
     return this.albums;
@@ -61,5 +69,6 @@ export class AlbumService {
       throw new NotFoundException('Album not found');
     }
     this.albums.splice(index, 1);
+    this.favoritesService.removeIdFromAllUsers('album', id);
   }
 }
