@@ -2,23 +2,21 @@ import {
   IsString,
   IsNotEmpty,
   IsUUID,
-  IsOptional,
   IsInt,
-  Min,
-  Max,
+  IsDefined,
 } from 'class-validator';
 
 export class CreateAlbumDto {
-  @IsString()
-  @IsNotEmpty()
+  @IsDefined({ message: 'name is required' })
+  @IsString({ message: 'name must be a string' })
+  @IsNotEmpty({ message: 'name should not be empty' })
   name: string;
 
-  @IsInt()
-  @Min(1900)
-  @Max(new Date().getFullYear())
+  @IsDefined({ message: 'year is required' })
+  @IsInt({ message: 'year must be an integer' })
   year: number;
 
-  @IsUUID()
-  @IsOptional()
-  artistId?: string | null;
+  @IsDefined({ message: 'artistId is required' })
+  @IsUUID('4', { message: 'artistId must be a valid UUID' })
+  artistId: string;
 }
