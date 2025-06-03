@@ -1,72 +1,64 @@
 # Home Library Service
 
-## Prerequisites
+How to Use
+1. Clone the Repository
+`git clone https://github.com/oanagrecu/nodejs2025Q2-service.git`
+`cd nodejs2025Q2-service`
+`git checkout dev`
+2. Install Dependencies
 
-- Git - [Download & Install Git](https://git-scm.com/downloads).
-- Node.js - [Download & Install Node.js](https://nodejs.org/en/download/) and the npm package manager.
+`npm install`
+3. Environment Configuration
+Create a .env file in the root directory with the following content:
 
-## Downloading
+`PORT=4000`
+You may change the PORT value to suit your needs.
 
-```
-git clone {repository URL}
-```
+4. Run the Application
 
-## Installing NPM modules
+`npm run start`
+The application will be available at:
 
-```
-npm install
-```
+http://localhost:4000
 
-## Running application
+5. Run Tests
 
-```
-npm start
-```
+`npm run test`
+6. Lint the Code
+`npm run lint`
+Make sure there are no linting errors.
 
-After starting the app on port (4000 as default) you can open
-in your browser OpenAPI documentation by typing http://localhost:4000/doc/.
-For more information about OpenAPI/Swagger please visit https://swagger.io/.
+7. API Documentation
+You can find the OpenAPI (Swagger) specification in the /doc folder.
 
-## Testing
+To view it in Swagger UI:
 
-After application running open new terminal and enter:
+Use https://editor.swagger.io/
 
-To run all tests without authorization
+Import the doc/openapi.yaml file
 
-```
-npm run test
-```
+🧪 Grading Instructions
+✅ Basic Scope (Max: 70 points)
+Criteria	Points	Evaluation
+README file with usage instructions	+10	Confirm detailed install/run/use instructions exist
+Users module structure	+10	Check adherence to NestJS conventions
+Tracks module structure	+10	Check adherence to NestJS conventions
+Albums module structure	+10	Check adherence to NestJS conventions
+Artists module structure	+10	Check adherence to NestJS conventions
+Favorites module structure	+10	Check adherence to NestJS conventions
+Each passed test	+10	Run npm test and count successful test cases
 
-To run only one of all test suites
+🚀 Advanced Scope (Max: 30 points)
+Criteria	Points	Evaluation
+PORT stored in .env	+10	Check if process.env.PORT is used
+OpenAPI spec provided	+20	Validate doc/openapi.yaml against assignment requirements
 
-```
-npm run test -- <path to suite>
-```
-
-To run all test with authorization
-
-```
-npm run test:auth
-```
-
-To run only specific test suite with authorization
-
-```
-npm run test:auth -- <path to suite>
-```
-
-### Auto-fix and format
-
-```
-npm run lint
-```
-
-```
-npm run format
-```
-
-### Debugging in VSCode
-
-Press <kbd>F5</kbd> to debug.
-
-For more information, visit: https://code.visualstudio.com/docs/editor/debugging
+❌ Forfeits
+Violation	Penalty
+Changes in tests	-670
+Commits after deadline (non-doc)	-30% of max
+No development branch	-20
+No pull request	-20
+Incorrect PR description	-10
+Lint errors (not warnings)	-10 each
+< 3 meaningful dev branch commits	-20
