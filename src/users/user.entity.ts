@@ -1,21 +1,22 @@
-import { v4 as uuidv4 } from 'uuid';
-import { User } from './user.interface';
+import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
 
-export class UserEntity implements User {
+@Entity()
+export class User {
+  @PrimaryGeneratedColumn('uuid')
   id: string;
-  login: string;
-  password: string;
-  version: number;
-  createdAt: number;
-  updatedAt: number;
 
-  constructor(login: string, password: string) {
-    this.id = uuidv4();
-    this.login = login;
-    this.password = password;
-    this.version = 1;
-    const now = Date.now();
-    this.createdAt = now;
-    this.updatedAt = now;
-  }
+  @Column()
+  login: string;
+
+  @Column()
+  password: string;
+
+  @Column({ default: 1 })
+  version: number;
+
+  @Column({ type: 'bigint' })
+  createdAt: number;
+
+  @Column({ type: 'bigint' })
+  updatedAt: number;
 }
