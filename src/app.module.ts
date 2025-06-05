@@ -12,16 +12,16 @@ import { FavoritesModule } from './favorites/favorites.module';
 import { AuthModule } from '../auth/auth.module';
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
+    ConfigModule.forRoot({ isGlobal: true, envFilePath: '.env' }),
     TypeOrmModule.forRoot({
       type: 'postgres',
-      host: process.env.DB_HOST,
-      port: +process.env.DB_PORT,
-      username: process.env.DB_USER,
-      password: process.env.DB_PASSWORD,
-      database: process.env.DB_NAME,
-      autoLoadEntities: true,
+      host: process.env.DB_HOST, // this should be 'db' inside Docker
+      port: parseInt(process.env.DB_PORT || '5432', 10),
+      username: process.env.DB_USER || 'postgres',
+      password: process.env.DB_PASSWORD || 'postgres',
+      database: process.env.DB_NAME || 'home_library',
       synchronize: true,
+      autoLoadEntities: true,
     }),
     UserModule,
     TrackModule,
