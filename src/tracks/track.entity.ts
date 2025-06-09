@@ -5,10 +5,10 @@ import {
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
-import { Artist } from '../artists/artist.entity';
 import { Album } from '../albums/album.entity';
+import { Artist } from '../artists/artist.entity';
 
-@Entity()
+@Entity('track')
 export class Track {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -16,21 +16,23 @@ export class Track {
   @Column()
   name: string;
 
-  // If you want a true foreign-key relationship, use ManyToOne:
-  @Column({ type: 'uuid', nullable: true })
+  @Column({ nullable: true })
   artistId: string | null;
-
-  @Column({ type: 'uuid', nullable: true })
-  albumId: string | null;
-
-  @Column('int')
-  duration: number;
 
   @ManyToOne(() => Artist, (artist) => artist.tracks, { onDelete: 'SET NULL' })
   @JoinColumn({ name: 'artistId' })
   artist: Artist;
 
-  @ManyToOne(() => Album, (album) => album.tracks, { onDelete: 'SET NULL' })
+  @Column({ nullable: true })
+  albumId: string | null;
+
+  @ManyToOne(() => Album, (album) => album.tracks, {
+    nullable: true,
+    onDelete: 'SET NULL',
+  })
   @JoinColumn({ name: 'albumId' })
-  album: Album;
+  album: Album | null;
+
+  @Column('int')
+  duration: number;
 }

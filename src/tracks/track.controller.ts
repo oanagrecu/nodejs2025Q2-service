@@ -13,51 +13,57 @@ import {
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
-import { TrackService } from './track.service';
+import { TracksService } from './track.service';
 import { CreateTrackDto } from './create-track.dto';
 import { UpdateTrackDto } from './update-track.dto';
 import { validate as uuidValidate } from 'uuid';
 
 @Controller('track')
 export class TrackController {
-  constructor(private readonly trackService: TrackService) {}
+  constructor(private readonly trackService: TracksService) {}
 
   @Get()
-  getAll() {
-    return this.trackService.findAll();
+  async getAll() {
+    return await this.trackService.findAll();
   }
 
   @Get(':id')
-  getOne(@Param('id') id: string) {
+  async getOne(@Param('id') id: string) {
     if (!uuidValidate(id)) throw new BadRequestException('Invalid UUID');
-    const track = this.trackService.findOneById(id);
+    const track = await this.trackService.findOneById(id);
     if (!track) throw new NotFoundException('Track not found');
     return track;
   }
 
   @Post()
   @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
-  create(@Body() createTrackDto: CreateTrackDto) {
-    // ValidationPipe will throw 400 if required fields missing or invalid
-    const track = this.trackService.create(createTrackDto);
+  @HttpCode(201) // <-- Add this decorator here to set status 201 explicitly
+  async create(@Body() createTrackDto: CreateTrackDto) {
+    const track = await this.trackService.create(createTrackDto);
+
     return {
-      statusCode: 201,
-      data: track,
+      id: track.id,
+      name: track.name,
+      artistId: track.artistId,
+      albumId: track.albumId,
+      duration: track.duration,
     };
   }
 
   @Put(':id')
   @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
-  update(@Param('id') id: string, @Body() updateTrackDto: UpdateTrackDto) {
+  async update(
+    @Param('id') id: string,
+    @Body() updateTrackDto: UpdateTrackDto,
+  ) {
     if (!uuidValidate(id)) throw new BadRequestException('Invalid UUID');
-    const updatedTrack = this.trackService.update(id, updateTrackDto);
-    return updatedTrack;
+    return await this.trackService.update(id, updateTrackDto);
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  delete(@Param('id') id: string) {
+  async delete(@Param('id') id: string) {
     if (!uuidValidate(id)) throw new BadRequestException('Invalid UUID');
-    this.trackService.delete(id);
+    await this.trackService.delete(id);
   }
 }

@@ -1,20 +1,43 @@
-// src/auth/auth.controller.ts
-import { Controller, Post, Body, HttpCode, HttpStatus } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  HttpCode,
+  HttpStatus,
+  UnauthorizedException,
+  UsePipes,
+  ValidationPipe,
+} from '@nestjs/common';
 import { AuthService } from './auth.service';
+import { RefreshTokenDto } from './refresh-token.dto';
+import { CreateUserDto } from '../src/users/create-user.dto';
 
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
+  @Post('signup')
+  @HttpCode(HttpStatus.CREATED)
+  async signup(@Body() createUserDto: CreateUserDto) {
+    return this.authService.signup(createUserDto);
+  }
 
+  @Post('login')
+  @HttpCode(HttpStatus.OK)
+  async login(@Body() body: { login: string; password: string }) {
+    const tokens = await this.authService.login(body.login, body.password);
+    if (!tokens) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+    return tokens;
+  }
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
-  async refresh(@Body('refreshToken') refreshToken: string) {
+  @UsePipes(new ValidationPipe({ whitelist: true }))
+  async refresh(@Body() body: RefreshTokenDto) {
+    const { refreshToken } = body;
+
     if (!refreshToken) {
-      // No token provided
-      return {
-        statusCode: HttpStatus.UNAUTHORIZED,
-        message: 'No refresh token provided',
-      };
+      throw new UnauthorizedException('No refresh token provided');
     }
 
     return this.authService.refreshTokens(refreshToken);

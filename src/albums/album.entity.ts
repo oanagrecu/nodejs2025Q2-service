@@ -2,14 +2,13 @@ import {
   Entity,
   PrimaryGeneratedColumn,
   Column,
-  ManyToOne,
   OneToMany,
+  ManyToOne,
   JoinColumn,
 } from 'typeorm';
 import { Artist } from '../artists/artist.entity';
 import { Track } from '../tracks/track.entity';
-
-@Entity()
+@Entity('album')
 export class Album {
   @PrimaryGeneratedColumn('uuid')
   id: string;

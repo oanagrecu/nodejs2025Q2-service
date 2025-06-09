@@ -21,6 +21,7 @@ Create a .env file based on .env.example:
 ### Build & Start
 
 ```bash
+docker compose down -v
 docker-compose up --build
 ```
 
@@ -32,6 +33,12 @@ http://localhost:4000
 
 ## Testing Functionality
 
+npm test -- test/users.e2e.spec.ts
+npm test -- test/artists.e2e.spec.ts
+npm test -- test/albums.e2e.spec.ts
+npm test -- test/favorites.e2e.spec.ts
+npm test -- test/tracks.e2e.spec.ts
+`
 Use a REST client (e.g., Postman)
 
 Users

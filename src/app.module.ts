@@ -15,7 +15,7 @@ import { AuthModule } from '../auth/auth.module';
     ConfigModule.forRoot({ isGlobal: true, envFilePath: '.env' }),
     TypeOrmModule.forRoot({
       type: 'postgres',
-      host: process.env.DB_HOST, // this should be 'db' inside Docker
+      host: process.env.DB_HOST || 'db',
       port: parseInt(process.env.DB_PORT || '5432', 10),
       username: process.env.DB_USER || 'postgres',
       password: process.env.DB_PASSWORD || 'postgres',

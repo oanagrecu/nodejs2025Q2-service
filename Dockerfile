@@ -1,17 +1,23 @@
-# Dockerfile
-FROM node:20
+# Use Node.js LTS version
+FROM node:22-alpine
 
-FROM node:24-slim
-
+# Set working directory
 WORKDIR /app
 
+
+# Install dependencies
 COPY package*.json ./
 RUN npm install
 
+# Copy source files
 COPY . .
 
+# Build the application
+RUN npm run build
+
+# Expose the application port
 EXPOSE 4000
 
-CMD ["npm", "run", "start:dev"]
-
+# Start the application
+CMD ["node", "dist/src/main.js"]
 
