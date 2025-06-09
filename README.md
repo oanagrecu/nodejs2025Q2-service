@@ -1,72 +1,101 @@
 # Home Library Service
 
-## Prerequisites
+# Getting Started
 
-- Git - [Download & Install Git](https://git-scm.com/downloads).
-- Node.js - [Download & Install Node.js](https://nodejs.org/en/download/) and the npm package manager.
+## 1. Clone the repository
 
-## Downloading
-
-```
-git clone {repository URL}
+```bash
+git clone https://github.com/oanagrecu/nodejs2025Q2-service.git
 ```
 
-## Installing NPM modules
-
-```
-npm install
+```bash
+cd nodejs2025Q2-service
 ```
 
-## Running application
+## 2. Configure .env
 
-```
-npm start
-```
+Create a .env file based on .env.example:
 
-After starting the app on port (4000 as default) you can open
-in your browser OpenAPI documentation by typing http://localhost:4000/doc/.
-For more information about OpenAPI/Swagger please visit https://swagger.io/.
+## 3 .Running with Docker
 
-## Testing
+### Build & Start
 
-After application running open new terminal and enter:
-
-To run all tests without authorization
-
-```
-npm run test
+```bash
+docker compose down -v
+docker-compose up --build
 ```
 
-To run only one of all test suites
+This starts both the NestJS app and a PostgreSQL container.
 
-```
-npm run test -- <path to suite>
-```
+## Access the API at:
 
-To run all test with authorization
+http://localhost:4000
 
-```
-npm run test:auth
-```
+## Testing Functionality
 
-To run only specific test suite with authorization
+npm test -- test/users.e2e.spec.ts
+npm test -- test/artists.e2e.spec.ts
+npm test -- test/albums.e2e.spec.ts
+npm test -- test/favorites.e2e.spec.ts
+npm test -- test/tracks.e2e.spec.ts
+`
+Use a REST client (e.g., Postman)
 
-```
-npm run test:auth -- <path to suite>
-```
+Users
+POST /user
+GET /user/:id
+PUT /user/:id
+DELETE /user/:id
 
-### Auto-fix and format
+Auth
+POST /auth/login with { login, password }
+returns JWT token if credentials match
+Artist / Album / Track / Favorites
+Full CRUD
+Favorite management (/favs route)
 
-```
+## Linting
+
+```bash
 npm run lint
 ```
 
+### Security Scan (Docker Scout)
+
+```bash
+docker scout quickview oanaalexandra81/home-library:latest
 ```
-npm run format
+
+```bash
+docker scout cves oanaalexandra81/home-library:latest
 ```
 
-### Debugging in VSCode
+Base image suggestions and CVEs are listed in build output.
 
-Press <kbd>F5</kbd> to debug.
+### Pushed Docker Image
 
-For more information, visit: https://code.visualstudio.com/docs/editor/debugging
+You can pull and run the image directly:
+
+```bash
+docker pull oanaalexandra81/home-library:latest
+```
+
+```bash
+docker run -p 3000:3000 --env-file .env oanaalexandra81/home-library:latest
+```
+
+### Database Schema (PostgreSQL)
+
+Tables created:
+user
+artist
+album
+track
+favorites
+
+You can insert test data directly using psql CLI or a database GUI
+sql
+
+```bash
+INSERT INTO artist (name, grammy) VALUES ('QUEEN', TRUE);
+```

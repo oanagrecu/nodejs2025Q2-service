@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    container_name: nestjs_app
+    ports:
+      - '4000:4000'
+    depends_on:
+      - db
+    environment:
+      - NODE_ENV=development
+      - PORT=4000
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_NAME=home_library
+      - CRYPT_SALT=10
+      - JWT_SECRET_KEY=secret123123
+      - JWT_SECRET_REFRESH_KEY=secret123123
+      - TOKEN_EXPIRE_TIME=1h
+      - TOKEN_REFRESH_EXPIRE_TIME=24h
+    networks:
+      - app-network
+
+  db:
+    image: postgres:15
+    container_name: postgres_db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: home_library
+    ports:
+      - '5432:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  pgdata:
