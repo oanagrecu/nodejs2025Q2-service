@@ -12,6 +12,7 @@ export class AuthService {
     private readonly configService: ConfigService,
     private readonly userService: UserService,
   ) {}
+
   async signup(createUserDto: CreateUserDto) {
     const saltRounds = Number(this.configService.get('CRYPT_SALT')) || 10;
     const hashedPassword = await bcrypt.hash(
@@ -29,27 +30,30 @@ export class AuthService {
 
   async login(login: string, password: string) {
     const user = await this.userService.findOneByLogin(login);
-    if (!user) return null;
+
+    if (!user) {
+      throw new ForbiddenException('Invalid login or password');
+    }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (!isPasswordValid) return null;
+
+    if (!isPasswordValid) {
+      throw new ForbiddenException('Invalid login or password');
+    }
 
     const payload = { userId: user.id, login: user.login };
 
-    const accessToken = this.jwtService.sign(payload, {
-      secret: this.configService.get<string>('JWT_SECRET_KEY'),
-      expiresIn: this.configService.get<string>('TOKEN_EXPIRE_TIME') || '1h',
-    });
-
-    const refreshToken = this.jwtService.sign(payload, {
-      secret: this.configService.get<string>('JWT_SECRET_REFRESH_KEY'),
-      expiresIn:
-        this.configService.get<string>('TOKEN_REFRESH_EXPIRE_TIME') || '24h',
-    });
+    const accessToken = this.getAccessToken(payload);
+    const refreshToken = this.getRefreshToken(payload);
 
     return { accessToken, refreshToken };
   }
+
   async refreshTokens(refreshToken: string) {
+    if (!refreshToken) {
+      throw new ForbiddenException('Refresh token is required');
+    }
+
     try {
       const payload = this.jwtService.verify(refreshToken, {
         secret: this.configService.get<string>('JWT_SECRET_REFRESH_KEY'),
@@ -57,28 +61,27 @@ export class AuthService {
 
       const { userId, login } = payload as { userId: string; login: string };
 
-      const accessToken = this.jwtService.sign(
-        { userId, login },
-        {
-          secret: this.configService.get<string>('JWT_SECRET_KEY'),
-          expiresIn:
-            this.configService.get<string>('TOKEN_EXPIRE_TIME') || '1h',
-        },
-      );
-
-      const newRefreshToken = this.jwtService.sign(
-        { userId, login },
-        {
-          secret: this.configService.get<string>('JWT_SECRET_REFRESH_KEY'),
-          expiresIn:
-            this.configService.get<string>('TOKEN_REFRESH_EXPIRE_TIME') ||
-            '24h',
-        },
-      );
+      const accessToken = this.getAccessToken({ userId, login });
+      const newRefreshToken = this.getRefreshToken({ userId, login });
 
       return { accessToken, refreshToken: newRefreshToken };
     } catch (error) {
       throw new ForbiddenException('Invalid or expired refresh token');
     }
+  }
+
+  private getAccessToken(payload: any): string {
+    return this.jwtService.sign(payload, {
+      secret: this.configService.get<string>('JWT_SECRET_KEY'),
+      expiresIn: this.configService.get<string>('TOKEN_EXPIRE_TIME') || '1h',
+    });
+  }
+
+  private getRefreshToken(payload: any): string {
+    return this.jwtService.sign(payload, {
+      secret: this.configService.get<string>('JWT_SECRET_REFRESH_KEY'),
+      expiresIn:
+        this.configService.get<string>('TOKEN_REFRESH_EXPIRE_TIME') || '24h',
+    });
   }
 }

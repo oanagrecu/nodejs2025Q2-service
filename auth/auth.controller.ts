@@ -15,14 +15,17 @@ import { CreateUserDto } from '../src/users/create-user.dto';
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
+
   @Post('signup')
   @HttpCode(HttpStatus.CREATED)
+  @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
   async signup(@Body() createUserDto: CreateUserDto) {
     return this.authService.signup(createUserDto);
   }
 
   @Post('login')
   @HttpCode(HttpStatus.OK)
+  @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
   async login(@Body() body: { login: string; password: string }) {
     const tokens = await this.authService.login(body.login, body.password);
     if (!tokens) {
@@ -30,9 +33,10 @@ export class AuthController {
     }
     return tokens;
   }
+
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
-  @UsePipes(new ValidationPipe({ whitelist: true }))
+  @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
   async refresh(@Body() body: RefreshTokenDto) {
     const { refreshToken } = body;
 
