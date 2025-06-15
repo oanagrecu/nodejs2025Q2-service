@@ -2,12 +2,14 @@ import {
   Injectable,
   ForbiddenException,
   BadRequestException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import { UserService } from '../src/users/user.service';
 import { CreateUserDto } from '../src/users/create-user.dto';
+import { LoginDto } from './dto/login.dto';
 
 @Injectable()
 export class AuthService {
@@ -17,50 +19,38 @@ export class AuthService {
     private readonly userService: UserService,
   ) {}
 
-  async signup(createUserDto: CreateUserDto) {
-    if (!createUserDto.login || !createUserDto.password) {
-      throw new BadRequestException('Login and password are required');
-    }
+  async signup(dto: CreateUserDto): Promise<{ id: string; message: string }> {
+    const { login, password } = dto;
 
     const saltRounds = parseInt(this.configService.get('CRYPT_SALT'), 10) || 10;
-    const hashedPassword = await bcrypt.hash(
-      createUserDto.password,
-      saltRounds,
-    );
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
 
     const newUser = await this.userService.create({
-      login: createUserDto.login,
+      login,
       password: hashedPassword,
     });
+
     return { id: newUser.id, message: 'User created successfully' };
   }
 
-  async login(login: string, password: string) {
-    if (!login || !password) {
-      throw new BadRequestException('Login and password are required');
-    }
-
+  async login(dto: LoginDto) {
+    const { login, password } = dto;
     const user = await this.userService.findOneByLogin(login);
-    if (!user) {
-      throw new ForbiddenException('Invalid credentials');
-    }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (!isPasswordValid) {
-      throw new ForbiddenException('Invalid credentials');
-    }
+    if (!isPasswordValid)
+      throw new UnauthorizedException('Invalid credentials');
 
     const payload = { userId: user.id, login: user.login };
 
     const accessToken = this.jwtService.sign(payload, {
-      secret: this.configService.get<string>('JWT_SECRET_KEY'),
-      expiresIn: this.configService.get<string>('TOKEN_EXPIRE_TIME') || '1h',
+      secret: this.configService.get('JWT_SECRET_KEY'),
+      expiresIn: this.configService.get('JWT_ACCESS_EXPIRES_IN') || '1h',
     });
 
     const refreshToken = this.jwtService.sign(payload, {
-      secret: this.configService.get<string>('JWT_SECRET_REFRESH_KEY'),
-      expiresIn:
-        this.configService.get<string>('TOKEN_REFRESH_EXPIRE_TIME') || '24h',
+      secret: this.configService.get('JWT_REFRESH_SECRET'),
+      expiresIn: this.configService.get('JWT_REFRESH_EXPIRES_IN') || '7d',
     });
 
     return { accessToken, refreshToken };

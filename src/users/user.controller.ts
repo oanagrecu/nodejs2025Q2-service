@@ -9,8 +9,9 @@ import {
   ParseUUIDPipe,
   HttpCode,
   HttpStatus,
-  HttpException,
   NotFoundException,
+  BadRequestException,
+  ForbiddenException,
   InternalServerErrorException,
 } from '@nestjs/common';
 import { UserService } from './user.service';
@@ -28,15 +29,9 @@ export class UserController {
 
   @Get(':id')
   async findOne(@Param('id', new ParseUUIDPipe()) id: string) {
-    try {
-      const user = await this.userService.findOne(id);
-      if (!user) {
-        throw new HttpException('User not found', HttpStatus.NOT_FOUND);
-      }
-      return user;
-    } catch (err) {
-      throw new HttpException('User not found', HttpStatus.NOT_FOUND);
-    }
+    const user = await this.userService.findOne(id);
+    if (!user) throw new NotFoundException('User not found');
+    return this.userService.toResponse(user);
   }
 
   @Post()
@@ -44,22 +39,16 @@ export class UserController {
   async create(@Body() createUserDto: CreateUserDto) {
     const { login, password } = createUserDto;
 
-    if (!login || !password) {
-      throw new HttpException(
-        'Missing required fields',
-        HttpStatus.BAD_REQUEST,
-      );
+    if (
+      !login ||
+      typeof login !== 'string' ||
+      !password ||
+      typeof password !== 'string'
+    ) {
+      throw new BadRequestException('Missing or invalid required fields');
     }
 
-    try {
-      const user = await this.userService.create({ login, password });
-      return user;
-    } catch (err) {
-      throw new HttpException(
-        'User creation failed',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
+    return this.userService.create({ login, password });
   }
 
   @Put(':id')
@@ -76,7 +65,7 @@ export class UserController {
       !newPassword ||
       typeof newPassword !== 'string'
     ) {
-      throw new HttpException('Invalid dto', HttpStatus.BAD_REQUEST);
+      throw new BadRequestException('Invalid dto');
     }
 
     try {
@@ -86,17 +75,17 @@ export class UserController {
         newPassword,
       );
     } catch (err) {
-      if (err.message === 'User not found') {
-        throw new HttpException(err.message, HttpStatus.NOT_FOUND);
-      } else if (err.message === 'Old password is wrong') {
-        throw new HttpException(err.message, HttpStatus.FORBIDDEN);
+      if (
+        err instanceof NotFoundException ||
+        err instanceof ForbiddenException ||
+        err instanceof BadRequestException
+      ) {
+        throw err;
       }
-      throw new HttpException(
-        'Unexpected error',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      throw new InternalServerErrorException('Unexpected error');
     }
   }
+
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   async remove(@Param('id', new ParseUUIDPipe()) id: string): Promise<void> {

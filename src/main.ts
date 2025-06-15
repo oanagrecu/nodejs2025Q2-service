@@ -1,6 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { ValidationPipe } from '@nestjs/common';
+import { ValidationPipe, Logger } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -12,67 +12,70 @@ import { AllExceptionsFilter } from './logging/filters/all-exceptions.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-
   const logger = app.get(LoggingService);
 
-  process.on('uncaughtException', (error) => {
-    logger.error('Uncaught Exception', error.stack || error.message);
-  });
+  const PORT = process.env.PORT || 4000;
 
+  // Global validation pipe with strict options
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+      transformOptions: { enableImplicitConversion: true },
+    }),
+  );
+
+  // Global exception filter for consistent error handling
+  app.useGlobalFilters(new AllExceptionsFilter(logger));
+
+  process.on('uncaughtException', (error) => {
+    logger.error('Uncaught Exception:', error.stack || error.message);
+  });
   process.on('unhandledRejection', (reason: any) => {
     logger.error(
-      'Unhandled Rejection',
+      'Unhandled Rejection:',
       reason?.stack || reason?.message || reason,
     );
   });
 
   try {
+    // Initialize database connection
     await AppDataSource.initialize();
     logger.log('Database connected');
 
-    const port = process.env.PORT || 4000;
-
-    app.useGlobalPipes(
-      new ValidationPipe({
-        whitelist: true,
-        forbidNonWhitelisted: true,
-        transform: true,
-      }),
-    );
-
-    app.useGlobalFilters(new AllExceptionsFilter(logger));
-
+    // Setup Swagger documentation paths
     const docDir = path.join(__dirname, '..', 'doc');
-    if (!fs.existsSync(docDir)) {
-      fs.mkdirSync(docDir);
-    }
+    if (!fs.existsSync(docDir)) fs.mkdirSync(docDir);
 
-    // Swagger UI (JSON) at /doc — generated from decorators
-    const config = new DocumentBuilder()
+    // Build Swagger config
+    const swaggerConfig = new DocumentBuilder()
       .setTitle('Home Library Service')
       .setDescription('Home library service API')
       .setVersion('1.0.0')
       .addBearerAuth()
       .build();
 
-    const document = SwaggerModule.createDocument(app, config);
-    SwaggerModule.setup('doc', app, document);
+    const swaggerDocument = SwaggerModule.createDocument(app, swaggerConfig);
+    SwaggerModule.setup('doc', app, swaggerDocument);
 
-    // Save JSON and YAML to doc/
     fs.writeFileSync(
       path.join(docDir, 'new-api.json'),
-      JSON.stringify(document, null, 2),
+      JSON.stringify(swaggerDocument, null, 2),
     );
-    const yamlContent = Yaml.stringify(document, 10);
+    const yamlContent = Yaml.stringify(swaggerDocument, 10);
     fs.writeFileSync(path.join(docDir, 'api.yaml'), yamlContent);
 
-    // Swagger UI (YAML) at /api — loaded from static file
+    // Serve Swagger UI (YAML) from static file at /api
     const swaggerYamlDoc = Yaml.load(path.join(docDir, 'api.yaml'));
     app.use('/api', swaggerUi.serve, swaggerUi.setup(swaggerYamlDoc));
 
+    // Start the app
+    await app.listen(PORT);
+
     logger.log(`Application is running on: ${await app.getUrl()}`);
-    logger.log(`Swagger UI (JSON) available at: http://localhost:${port}/doc`);
-    logger.log(`Swagger UI (YAML) available at: http://localhost:${port}/api`);
+    logger.log(`Swagger UI (JSON) available at: http://localhost:${PORT}/doc`);
+    logger.log(`Swagger UI (YAML) available at: http://localhost:${PORT}/api`);
   } catch (error) {
     logger.error(
       'Failed to initialize database:',
@@ -80,8 +83,6 @@ async function bootstrap() {
     );
     process.exit(1);
   }
-
-  await app.listen(process.env.PORT || 4000);
 }
 
 bootstrap();

@@ -39,10 +39,7 @@ export class AuthController {
   @ApiResponse({ status: 403, description: 'Authentication failed' })
   @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
   async login(@Body() loginDto: LoginDto) {
-    const tokens = await this.authService.login(
-      loginDto.login,
-      loginDto.password,
-    );
+    const tokens = await this.authService.login(loginDto);
     if (!tokens) {
       throw new ForbiddenException('Authentication failed');
     }

@@ -55,7 +55,7 @@ export class AlbumsService {
     }
   }
 
-  async create(dto: CreateAlbumDto): Promise<Album> {
+  async post(dto: CreateAlbumDto): Promise<Album> {
     if (dto.artistId) {
       const artist = await this.artistRepository.findOneBy({
         id: dto.artistId,

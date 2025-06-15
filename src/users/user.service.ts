@@ -3,6 +3,7 @@ import {
   NotFoundException,
   BadRequestException,
   ForbiddenException,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -11,7 +12,6 @@ import { validate as isUuid } from 'uuid';
 import { CreateUserDto } from './create-user.dto';
 import * as bcrypt from 'bcrypt';
 import { ConfigService } from '@nestjs/config';
-
 @Injectable()
 export class UserService {
   constructor(
@@ -20,7 +20,7 @@ export class UserService {
     private readonly configService: ConfigService,
   ) {}
 
-  private toResponse(user: User) {
+  public toResponse(user: User) {
     const { id, login, version, createdAt, updatedAt } = user;
     return {
       id,
@@ -35,26 +35,15 @@ export class UserService {
     const users = await this.usersRepository.find();
     return users.map((user) => this.toResponse(user));
   }
-
-  async findOne(id: string) {
-    if (!isUuid(id)) {
-      throw new BadRequestException('Invalid UUID');
-    }
-
-    const user = await this.usersRepository.findOne({ where: { id } });
-
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-
-    return this.toResponse(user);
+  async findOne(id: string): Promise<User | null> {
+    return await this.usersRepository.findOne({ where: { id } });
   }
 
   async create(createUserDto: CreateUserDto) {
     const { login, password } = createUserDto;
 
     if (!login || !password) {
-      throw new BadRequestException('Login and password are required');
+      throw new InternalServerErrorException('User creation failed');
     }
 
     const user = this.usersRepository.create({ login, password });
