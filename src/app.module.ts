@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-
+import { LoggingModule } from './logging/logging.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UserModule } from './users/user.module';
@@ -23,6 +23,7 @@ import { AuthModule } from '../auth/auth.module';
       synchronize: true,
       autoLoadEntities: true,
     }),
+    LoggingModule,
     UserModule,
     TrackModule,
     ArtistModule,

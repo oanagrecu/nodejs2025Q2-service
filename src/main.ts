@@ -7,13 +7,28 @@ import * as path from 'path';
 import * as swaggerUi from 'swagger-ui-express';
 import * as Yaml from 'yamljs';
 import { AppDataSource } from '../data-source';
-import { join } from 'path';
+import { LoggingService } from './logging/logging.service';
+import { AllExceptionsFilter } from './logging/filters/all-exceptions.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  const logger = app.get(LoggingService);
+
+  process.on('uncaughtException', (error) => {
+    logger.error('Uncaught Exception', error.stack || error.message);
+  });
+
+  process.on('unhandledRejection', (reason: any) => {
+    logger.error(
+      'Unhandled Rejection',
+      reason?.stack || reason?.message || reason,
+    );
+  });
+
   try {
     await AppDataSource.initialize();
-    console.log('Database connected');
+    logger.log('Database connected');
 
     const port = process.env.PORT || 4000;
 
@@ -25,40 +40,48 @@ async function bootstrap() {
       }),
     );
 
-    const config = new DocumentBuilder()
-      .setTitle('Home Library Service')
-      .setDescription('Home library service')
-      .setVersion('1.0.0')
-      .addBearerAuth()
-      .build();
-
-    const document = SwaggerModule.createDocument(app, config);
+    app.useGlobalFilters(new AllExceptionsFilter(logger));
 
     const docDir = path.join(__dirname, '..', 'doc');
     if (!fs.existsSync(docDir)) {
       fs.mkdirSync(docDir);
     }
+
+    // Swagger UI (JSON) at /doc — generated from decorators
+    const config = new DocumentBuilder()
+      .setTitle('Home Library Service')
+      .setDescription('Home library service API')
+      .setVersion('1.0.0')
+      .addBearerAuth()
+      .build();
+
+    const document = SwaggerModule.createDocument(app, config);
+    SwaggerModule.setup('doc', app, document);
+
+    // Save JSON and YAML to doc/
     fs.writeFileSync(
       path.join(docDir, 'new-api.json'),
       JSON.stringify(document, null, 2),
     );
+    const yamlContent = Yaml.stringify(document, 10);
+    fs.writeFileSync(path.join(docDir, 'api.yaml'), yamlContent);
 
-    SwaggerModule.setup('doc', app, document);
+    // Swagger UI (YAML) at /api — loaded from static file
+    const swaggerYamlDoc = Yaml.load(path.join(docDir, 'api.yaml'));
+    app.use('/api', swaggerUi.serve, swaggerUi.setup(swaggerYamlDoc));
 
-    const swaggerDocument = Yaml.load(join(__dirname, '..', 'doc', 'api.yaml'));
-    app.use('/api', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
-
-    await app.listen(port);
-
-    console.log(`Application is running on: ${await app.getUrl()}`);
-    console.log(`Swagger UI available at: http://localhost:${port}/doc`);
-    console.log(
-      `YAML-based Swagger UI available at: http://localhost:${port}/api`,
-    );
+    logger.log(`Application is running on: ${await app.getUrl()}`);
+    logger.log(`Swagger UI (JSON) available at: http://localhost:${port}/doc`);
+    logger.log(`Swagger UI (YAML) available at: http://localhost:${port}/api`);
   } catch (error) {
-    console.error('Failed to initialize database:', error);
+    logger.error(
+      'Failed to initialize database:',
+      error.stack || error.message,
+    );
     process.exit(1);
   }
+
+  await app.listen(process.env.PORT || 4000);
 }
 
 bootstrap();

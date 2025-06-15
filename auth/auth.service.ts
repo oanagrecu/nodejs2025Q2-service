@@ -1,4 +1,8 @@
-import { Injectable, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  ForbiddenException,
+  BadRequestException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
@@ -14,7 +18,11 @@ export class AuthService {
   ) {}
 
   async signup(createUserDto: CreateUserDto) {
-    const saltRounds = Number(this.configService.get('CRYPT_SALT')) || 10;
+    if (!createUserDto.login || !createUserDto.password) {
+      throw new BadRequestException('Login and password are required');
+    }
+
+    const saltRounds = parseInt(this.configService.get('CRYPT_SALT'), 10) || 10;
     const hashedPassword = await bcrypt.hash(
       createUserDto.password,
       saltRounds,
@@ -24,34 +32,43 @@ export class AuthService {
       login: createUserDto.login,
       password: hashedPassword,
     });
-
-    return { id: newUser.id };
+    return { id: newUser.id, message: 'User created successfully' };
   }
 
   async login(login: string, password: string) {
-    const user = await this.userService.findOneByLogin(login);
+    if (!login || !password) {
+      throw new BadRequestException('Login and password are required');
+    }
 
+    const user = await this.userService.findOneByLogin(login);
     if (!user) {
-      throw new ForbiddenException('Invalid login or password');
+      throw new ForbiddenException('Invalid credentials');
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
-
     if (!isPasswordValid) {
-      throw new ForbiddenException('Invalid login or password');
+      throw new ForbiddenException('Invalid credentials');
     }
 
     const payload = { userId: user.id, login: user.login };
 
-    const accessToken = this.getAccessToken(payload);
-    const refreshToken = this.getRefreshToken(payload);
+    const accessToken = this.jwtService.sign(payload, {
+      secret: this.configService.get<string>('JWT_SECRET_KEY'),
+      expiresIn: this.configService.get<string>('TOKEN_EXPIRE_TIME') || '1h',
+    });
+
+    const refreshToken = this.jwtService.sign(payload, {
+      secret: this.configService.get<string>('JWT_SECRET_REFRESH_KEY'),
+      expiresIn:
+        this.configService.get<string>('TOKEN_REFRESH_EXPIRE_TIME') || '24h',
+    });
 
     return { accessToken, refreshToken };
   }
 
   async refreshTokens(refreshToken: string) {
     if (!refreshToken) {
-      throw new ForbiddenException('Refresh token is required');
+      throw new ForbiddenException('No refresh token provided');
     }
 
     try {
@@ -61,27 +78,28 @@ export class AuthService {
 
       const { userId, login } = payload as { userId: string; login: string };
 
-      const accessToken = this.getAccessToken({ userId, login });
-      const newRefreshToken = this.getRefreshToken({ userId, login });
+      const accessToken = this.jwtService.sign(
+        { userId, login },
+        {
+          secret: this.configService.get<string>('JWT_SECRET_KEY'),
+          expiresIn:
+            this.configService.get<string>('TOKEN_EXPIRE_TIME') || '1h',
+        },
+      );
+
+      const newRefreshToken = this.jwtService.sign(
+        { userId, login },
+        {
+          secret: this.configService.get<string>('JWT_SECRET_REFRESH_KEY'),
+          expiresIn:
+            this.configService.get<string>('TOKEN_REFRESH_EXPIRE_TIME') ||
+            '24h',
+        },
+      );
 
       return { accessToken, refreshToken: newRefreshToken };
-    } catch (error) {
+    } catch {
       throw new ForbiddenException('Invalid or expired refresh token');
     }
-  }
-
-  private getAccessToken(payload: any): string {
-    return this.jwtService.sign(payload, {
-      secret: this.configService.get<string>('JWT_SECRET_KEY'),
-      expiresIn: this.configService.get<string>('TOKEN_EXPIRE_TIME') || '1h',
-    });
-  }
-
-  private getRefreshToken(payload: any): string {
-    return this.jwtService.sign(payload, {
-      secret: this.configService.get<string>('JWT_SECRET_REFRESH_KEY'),
-      expiresIn:
-        this.configService.get<string>('TOKEN_REFRESH_EXPIRE_TIME') || '24h',
-    });
   }
 }

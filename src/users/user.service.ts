@@ -9,12 +9,15 @@ import { Repository } from 'typeorm';
 import { User } from './user.entity';
 import { validate as isUuid } from 'uuid';
 import { CreateUserDto } from './create-user.dto';
+import * as bcrypt from 'bcrypt';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class UserService {
   constructor(
     @InjectRepository(User)
     private usersRepository: Repository<User>,
+    private readonly configService: ConfigService,
   ) {}
 
   private toResponse(user: User) {
@@ -80,11 +83,18 @@ export class UserService {
       throw new NotFoundException('User not found');
     }
 
-    if (user.password !== oldPassword) {
+    const isOldPasswordCorrect = await bcrypt.compare(
+      oldPassword,
+      user.password,
+    );
+    if (!isOldPasswordCorrect) {
       throw new ForbiddenException('Incorrect old password');
     }
 
-    user.password = newPassword;
+    const saltRounds = this.configService.get<number>('SALT_ROUNDS') || 10;
+    const hashedNewPassword = await bcrypt.hash(newPassword, saltRounds);
+
+    user.password = hashedNewPassword;
     user.version += 1;
     user.updatedAt = new Date();
 
