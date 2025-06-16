@@ -1,6 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { ValidationPipe, Logger } from '@nestjs/common';
+import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -16,7 +16,6 @@ async function bootstrap() {
 
   const PORT = process.env.PORT || 4000;
 
-  // Global validation pipe with strict options
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -26,7 +25,6 @@ async function bootstrap() {
     }),
   );
 
-  // Global exception filter for consistent error handling
   app.useGlobalFilters(new AllExceptionsFilter(logger));
 
   process.on('uncaughtException', (error) => {
@@ -40,15 +38,12 @@ async function bootstrap() {
   });
 
   try {
-    // Initialize database connection
     await AppDataSource.initialize();
     logger.log('Database connected');
 
-    // Setup Swagger documentation paths
     const docDir = path.join(__dirname, '..', 'doc');
     if (!fs.existsSync(docDir)) fs.mkdirSync(docDir);
 
-    // Build Swagger config
     const swaggerConfig = new DocumentBuilder()
       .setTitle('Home Library Service')
       .setDescription('Home library service API')
@@ -57,7 +52,7 @@ async function bootstrap() {
       .build();
 
     const swaggerDocument = SwaggerModule.createDocument(app, swaggerConfig);
-    SwaggerModule.setup('doc', app, swaggerDocument);
+    SwaggerModule.setup('/doc', app, swaggerDocument);
 
     fs.writeFileSync(
       path.join(docDir, 'new-api.json'),

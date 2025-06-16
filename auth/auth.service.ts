@@ -1,7 +1,7 @@
 import {
   Injectable,
   ForbiddenException,
-  BadRequestException,
+  ConflictException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
@@ -25,18 +25,27 @@ export class AuthService {
     const saltRounds = parseInt(this.configService.get('CRYPT_SALT'), 10) || 10;
     const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-    const newUser = await this.userService.create({
-      login,
-      password: hashedPassword,
-    });
+    try {
+      const newUser = await this.userService.create({
+        login,
+        password: hashedPassword,
+      });
 
-    return { id: newUser.id, message: 'User created successfully' };
+      return { id: newUser.id, message: 'User created successfully' };
+    } catch (err) {
+      if (err.code === '23505') {
+        throw new ConflictException('Login already exists');
+      }
+      throw err;
+    }
   }
 
   async login(dto: LoginDto) {
     const { login, password } = dto;
-    const user = await this.userService.findOneByLogin(login);
-
+    const user = await this.userService.findByLogin(login);
+    if (!user) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid)
       throw new UnauthorizedException('Invalid credentials');
@@ -45,12 +54,12 @@ export class AuthService {
 
     const accessToken = this.jwtService.sign(payload, {
       secret: this.configService.get('JWT_SECRET_KEY'),
-      expiresIn: this.configService.get('JWT_ACCESS_EXPIRES_IN') || '1h',
+      expiresIn: this.configService.get('TOKEN_EXPIRE_TIME') || '1h',
     });
 
     const refreshToken = this.jwtService.sign(payload, {
-      secret: this.configService.get('JWT_REFRESH_SECRET'),
-      expiresIn: this.configService.get('JWT_REFRESH_EXPIRES_IN') || '7d',
+      secret: this.configService.get('JWT_SECRET_REFRESH_KEY'),
+      expiresIn: this.configService.get('TOKEN_REFRESH_EXPIRE_TIME') || '24h',
     });
 
     return { accessToken, refreshToken };

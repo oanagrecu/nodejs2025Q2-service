@@ -4,12 +4,14 @@ import {
   BadRequestException,
   ForbiddenException,
   InternalServerErrorException,
+  ConflictException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './user.entity';
 import { validate as isUuid } from 'uuid';
 import { CreateUserDto } from './create-user.dto';
+import { UserResponseDto } from './response-user.dto';
 import * as bcrypt from 'bcrypt';
 import { ConfigService } from '@nestjs/config';
 @Injectable()
@@ -38,20 +40,21 @@ export class UserService {
   async findOne(id: string): Promise<User | null> {
     return await this.usersRepository.findOne({ where: { id } });
   }
+  async create(dto: CreateUserDto): Promise<UserResponseDto> {
+    const user = this.usersRepository.create(dto);
 
-  async create(createUserDto: CreateUserDto) {
-    const { login, password } = createUserDto;
-
-    if (!login || !password) {
-      throw new InternalServerErrorException('User creation failed');
+    try {
+      const saved = await this.usersRepository.save(user);
+      return this.toResponse(saved);
+    } catch (err) {
+      if (err.code === '23505') {
+        throw new ConflictException('Login already exists');
+      }
+      throw new InternalServerErrorException('Unexpected error');
     }
-
-    const user = this.usersRepository.create({ login, password });
-    const saved = await this.usersRepository.save(user);
-    return this.toResponse(saved);
   }
 
-  async findOneByLogin(login: string) {
+  async findByLogin(login: string) {
     return this.usersRepository.findOne({ where: { login } });
   }
 
@@ -80,7 +83,7 @@ export class UserService {
       throw new ForbiddenException('Incorrect old password');
     }
 
-    const saltRounds = this.configService.get<number>('SALT_ROUNDS') || 10;
+    const saltRounds = this.configService.get<number>('CRYPT_SALT') || 10;
     const hashedNewPassword = await bcrypt.hash(newPassword, saltRounds);
 
     user.password = hashedNewPassword;

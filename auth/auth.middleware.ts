@@ -15,6 +15,13 @@ export class AuthMiddleware implements NestMiddleware {
   ) {}
 
   use(req: Request, res: Response, next: NextFunction) {
+    const publicPaths = ['/', '/doc', '/auth/login', '/auth/signup'];
+    const isPublic = publicPaths.some((path) => req.path.startsWith(path));
+
+    if (isPublic) {
+      return next();
+    }
+
     const authHeader = req.headers['authorization'];
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       throw new UnauthorizedException(

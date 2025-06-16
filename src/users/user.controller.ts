@@ -48,7 +48,14 @@ export class UserController {
       throw new BadRequestException('Missing or invalid required fields');
     }
 
-    return this.userService.create({ login, password });
+    try {
+      return await this.userService.create({ login, password });
+    } catch (err) {
+      if (err instanceof ConflictException) {
+        throw err;
+      }
+      throw new InternalServerErrorException('Unexpected error');
+    }
   }
 
   @Put(':id')
@@ -69,17 +76,20 @@ export class UserController {
     }
 
     try {
-      return await this.userService.updatePassword(
+      const updatedUser = await this.userService.updatePassword(
         id,
         oldPassword,
         newPassword,
       );
+      return updatedUser;
     } catch (err) {
-      if (
-        err instanceof NotFoundException ||
-        err instanceof ForbiddenException ||
-        err instanceof BadRequestException
-      ) {
+      if (err instanceof NotFoundException) {
+        throw err;
+      }
+      if (err instanceof ForbiddenException) {
+        throw err;
+      }
+      if (err instanceof BadRequestException) {
         throw err;
       }
       throw new InternalServerErrorException('Unexpected error');
@@ -92,8 +102,8 @@ export class UserController {
     try {
       await this.userService.delete(id);
     } catch (err) {
-      if (err.message === 'User not found') {
-        throw new NotFoundException('User not found');
+      if (err instanceof NotFoundException) {
+        throw err;
       }
       throw new InternalServerErrorException('Unexpected error');
     }

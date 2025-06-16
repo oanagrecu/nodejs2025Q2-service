@@ -86,6 +86,8 @@ docker run -p 3000:3000 --env-file .env oanaalexandra81/home-library:latest
 
 ### Database Schema (PostgreSQL)
 
+`docker exec -it postgres_db psql -U postgres -d home_library`
+
 Tables created:
 user
 artist

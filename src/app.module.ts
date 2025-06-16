@@ -32,14 +32,13 @@ import { AuthMiddleware } from '../auth/auth.middleware';
       autoLoadEntities: true,
     }),
 
-    // Register JwtModule here so JwtService is injectable in middleware
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
         secret: configService.get<string>('JWT_SECRET_KEY'),
         signOptions: {
-          expiresIn: configService.get<string>('JWT_ACCESS_EXPIRES_IN') || '1h',
+          expiresIn: configService.get<string>('TOKEN_EXPIRE_TIME') || '1h',
         },
       }),
     }),
@@ -60,11 +59,10 @@ export class AppModule implements NestModule {
     consumer
       .apply(AuthMiddleware)
       .exclude(
-        { path: 'auth/signup', method: RequestMethod.ALL },
-        { path: 'auth/login', method: RequestMethod.ALL },
-        { path: 'auth/refresh', method: RequestMethod.ALL },
+        { path: '/', method: RequestMethod.ALL },
+        { path: 'auth*', method: RequestMethod.ALL },
         { path: 'doc', method: RequestMethod.ALL },
-        { path: '', method: RequestMethod.ALL },
+        { path: 'api', method: RequestMethod.ALL },
       )
       .forRoutes('*');
   }
