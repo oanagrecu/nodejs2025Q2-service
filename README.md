@@ -21,11 +21,17 @@ Create a .env file based on .env.example:
 ### Build & Start
 
 ```bash
-docker compose down -v
+
 docker-compose up --build
 ```
 
-This starts both the NestJS app and a PostgreSQL container.
+### Stop the project:
+
+```bash
+docker compose down -v
+```
+
+### This starts both the NestJS app and a PostgreSQL container.
 
 ## Access the API at:
 

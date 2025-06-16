@@ -30,6 +30,7 @@ async function bootstrap() {
   process.on('uncaughtException', (error) => {
     logger.error('Uncaught Exception:', error.stack || error.message);
   });
+
   process.on('unhandledRejection', (reason: any) => {
     logger.error(
       'Unhandled Rejection:',
@@ -65,7 +66,6 @@ async function bootstrap() {
     const swaggerYamlDoc = Yaml.load(path.join(docDir, 'api.yaml'));
     app.use('/api', swaggerUi.serve, swaggerUi.setup(swaggerYamlDoc));
 
-    // Start the app
     await app.listen(PORT);
 
     logger.log(`Application is running on: ${await app.getUrl()}`);
