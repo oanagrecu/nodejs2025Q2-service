@@ -6,6 +6,17 @@ info:
 
 servers:
   - url: /api
+tags:
+  - name: users
+    description: Operations about users
+  - name: artists
+    description: Operations about artists
+  - name: albums
+    description: Operations about albums
+  - name: tracks
+    description: Operations about tracks
+  - name: favorites
+    description: Operations about user favorites
 
 components:
   schemas:
@@ -117,82 +128,10 @@ security:
   - bearerAuth: []
 
 paths:
-  /login:
-    post:
-      tags:
-        - Login
-      security: []
-      summary: Login
-      description: Logins a user and returns a JWT-token
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              title: example
-              properties:
-                login:
-                  type: string
-                  description: Username
-                password:
-                  type: string
-                  description: Password
-              required:
-                - user
-                - login
-      responses:
-        200:
-          description: Successful login.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  token:
-                    type: string
-                description: JWT Token
-        403:
-          description: Incorrect login or password
-  /signup:
-    post:
-      tags:
-        - Signup
-      security: [ ]
-      summary: Signup
-      description: Signup a user
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              title: example
-              properties:
-                login:
-                  type: string
-                  minLength: 3
-                  maxLength: 255
-                  description: Username
-                password:
-                  type: string
-                  format: password
-                  pattern: ^[a-zA-Z0-9]{3,30}
-                  description: Password
-              required:
-                - login
-                - password
-      responses:
-        204:
-          description: Successful signup
-        400:
-          description: Bad request
-        409:
-          description: Conflict. Login already exists
-  /users:
+  /user:
     get:
       tags:
-        - Users
+        - users
       summary: Get all users
       description: Gets all users
       responses:
@@ -208,7 +147,7 @@ paths:
           $ref: '#/components/responses/UnauthorizedError'
     post:
       tags:
-        - Users
+        - users
       summary: Create user
       description: Creates a new user
       requestBody:
@@ -228,6 +167,9 @@ paths:
               required:
                 - login
                 - password
+            example:
+              login: 'TEST_LOGIN'
+              password: 'TEST_PASSWORD'
       responses:
         201:
           description: The user has been created.
@@ -239,7 +181,7 @@ paths:
           description: Bad request. body does not contain required fields
         401:
           $ref: '#/components/responses/UnauthorizedError'
-  /users/{userId}:
+  /user/{userId}:
     parameters:
       - name: userId
         in: path
@@ -248,7 +190,7 @@ paths:
           type: string
     get:
       tags:
-        - Users
+        - users
       summary: Get single user by id
       description: Get single user by id
       responses:
@@ -267,7 +209,7 @@ paths:
 
     put:
       tags:
-        - Users
+        - users
       summary: Update a user's password
       description: Updates a user's password by ID
       requestBody:
@@ -287,6 +229,9 @@ paths:
               required:
                 - oldPassword
                 - newPassword
+            example:
+              oldPassword: 'TEST_PASSWORD'
+              newPassword: 'NEW_PASSWORD'
       responses:
         200:
           description: The user has been updated.
@@ -322,7 +267,7 @@ paths:
 
     delete:
       tags:
-        - Users
+        - users
       summary: Delete user
       description: Deletes user by ID.
       responses:
@@ -334,10 +279,10 @@ paths:
           $ref: '#/components/responses/UnauthorizedError'
         404:
           description: User not found
-  /tracks:
+  /track:
     get:
       tags:
-        - Track
+        - tracks
       summary: Get tracks list
       description: Gets all library tracks list
       responses:
@@ -353,7 +298,7 @@ paths:
           $ref: '#/components/responses/UnauthorizedError'
     post:
       tags:
-        - Track
+        - tracks
       summary: Add new track
       description: Add new track information
       requestBody:
@@ -377,6 +322,11 @@ paths:
               required:
                 - name
                 - duration
+            example:
+              name: 'The Show Must Go On'
+              artistId: 'fdaa4717-471a-4286-9a25-78871f37e8c3'
+              albumId: 'b1442145-2d17-4584-9343-4171a5c689e3'
+              duration: 262
       responses:
         201:
           description: Successful operation
@@ -388,7 +338,7 @@ paths:
           description: Bad request. body does not contain required fields
         401:
           $ref: '#/components/responses/UnauthorizedError'
-  /tracks/{id}:
+  /track/{id}:
     parameters:
       - name: id
         in: path
@@ -398,7 +348,7 @@ paths:
           format: uuid
     get:
       tags:
-        - Track
+        - tracks
       summary: Get single track by id
       description: Gets single track by id
       responses:
@@ -416,7 +366,7 @@ paths:
           description: Track was not found.
     put:
       tags:
-        - Track
+        - tracks
       summary: Update track information
       description: Update library track information by UUID
       requestBody:
@@ -445,6 +395,11 @@ paths:
               required:
                 - name
                 - duration
+            example:
+              name: 'Bohemian Rhapsody'
+              artistId: 'fdaa4717-471a-4286-9a25-78871f37e8c3'
+              albumId: 'b1442145-2d17-4584-9343-4171a5c689e3'
+              duration: 355
       responses:
         200:
           description: The track has been updated.
@@ -480,7 +435,7 @@ paths:
           description: Track was not found.
     delete:
       tags:
-        - Track
+        - tracks
       summary: Delete track
       description: Delete track from library
       responses:
@@ -492,10 +447,10 @@ paths:
           $ref: '#/components/responses/UnauthorizedError'
         404:
           description: Track was not found.
-  /albums:
+  /album:
     get:
       tags:
-        - Album
+        - albums
       summary: Get albums list
       description: Gets all library albums list
       responses:
@@ -511,7 +466,7 @@ paths:
           $ref: '#/components/responses/UnauthorizedError'
     post:
       tags:
-        - Album
+        - albums
       summary: Add new album
       description: Add new album information
       requestBody:
@@ -533,6 +488,10 @@ paths:
               required:
                 - name
                 - year
+            example:
+              name: 'Innuendo'
+              year: 1991
+              artistId: 'fdaa4717-471a-4286-9a25-78871f37e8c3'
       responses:
         201:
           description: Album is created
@@ -544,7 +503,7 @@ paths:
           description: Bad request. body does not contain required fields
         401:
           $ref: '#/components/responses/UnauthorizedError'
-  /albums/{id}:
+  /album/{id}:
     parameters:
       - name: id
         in: path
@@ -554,7 +513,7 @@ paths:
           format: uuid
     get:
       tags:
-        - Album
+        - albums
       summary: Get single album by id
       description: Gets single album by id
       responses:
@@ -572,7 +531,7 @@ paths:
           description: Album was not found.
     put:
       tags:
-        - Album
+        - albums
       summary: Update album information
       description: Update library album information by UUID
       requestBody:
@@ -594,6 +553,10 @@ paths:
               required:
                 - name
                 - year
+            example:
+              name: 'A Night at the Opera'
+              year: 1975
+              artistId: 'fdaa4717-471a-4286-9a25-78871f37e8c3'
       responses:
         200:
           description: The album has been updated.
@@ -609,7 +572,7 @@ paths:
           description: Album was not found.
     delete:
       tags:
-        - Album
+        - albums
       summary: Delete album
       description: Delete album from library
       responses:
@@ -621,10 +584,10 @@ paths:
           $ref: '#/components/responses/UnauthorizedError'
         404:
           description: Album was not found.
-  /artists:
+  /artist:
     get:
       tags:
-        - Artist
+        - artists
       summary: Get all artists
       description: Gets all artists
       responses:
@@ -640,7 +603,7 @@ paths:
           $ref: '#/components/responses/UnauthorizedError'
     post:
       tags:
-        - Artist
+        - artists
       summary: Add new artist
       description: Add new artist
       requestBody:
@@ -657,6 +620,9 @@ paths:
               required:
                 - name
                 - grammy
+            example:
+              name: 'Freddie Mercury'
+              grammy: false
       responses:
         201:
           description: Successful operation
@@ -668,7 +634,7 @@ paths:
           description: Bad request. body does not contain required fields
         401:
           $ref: '#/components/responses/UnauthorizedError'
-  /artists/{id}:
+  /artist/{id}:
     parameters:
       - name: id
         in: path
@@ -678,7 +644,7 @@ paths:
           format: uuid
     get:
       tags:
-        - Artist
+        - artists
       summary: Get single artist by id
       description: Get single artist by id
       responses:
@@ -696,7 +662,7 @@ paths:
           description: Artist was not found.
     put:
       tags:
-        - Artist
+        - artists
       summary: Update artist information
       description: Update artist information by UUID
       requestBody:
@@ -713,6 +679,9 @@ paths:
               required:
                 - name
                 - grammy
+            example:
+              name: 'Queen'
+              grammy: true
       responses:
         200:
           description: The artist has been updated.
@@ -728,7 +697,7 @@ paths:
           description: Artist was not found.
     delete:
       tags:
-        - Artist
+        - artists
       summary: Delete artist
       description: Delete artist from library
       responses:
@@ -743,7 +712,7 @@ paths:
   /favs:
     get:
       tags:
-        - Favorites
+        - favorites
       summary: Get all favorites
       description: Gets all favorites movies, tracks and books
       responses:
@@ -765,7 +734,7 @@ paths:
           format: uuid
     post:
       tags:
-        - Favorites
+        - favorites
       summary: Add track to the favorites
       description: Add track to the favorites
       responses:
@@ -779,7 +748,7 @@ paths:
           description: Track with id doesn't exist.
     delete:
       tags:
-        - Favorites
+        - favorites
       summary: Delete track from favorites
       description: Delete track from favorites
       responses:
@@ -801,7 +770,7 @@ paths:
           format: uuid
     post:
       tags:
-        - Favorites
+        - favorites
       summary: Add album to the favorites
       description: Add album to the favorites
       responses:
@@ -815,7 +784,7 @@ paths:
           description: Album with id doesn't exist.
     delete:
       tags:
-        - Favorites
+        - favorites
       summary: Delete album from favorites
       description: Delete album from favorites
       responses:
@@ -837,7 +806,7 @@ paths:
           format: uuid
     post:
       tags:
-        - Favorites
+        - favorites
       summary: Add artist to the favorites
       description: Add artist to the favorites
       responses:
@@ -851,7 +820,7 @@ paths:
           description: Artist with id doesn't exist.
     delete:
       tags:
-        - Favorites
+        - favorites
       summary: Delete artist from favorites
       description: Delete artist from favorites
       responses:
@@ -862,4 +831,4 @@ paths:
         401:
           $ref: '#/components/responses/UnauthorizedError'
         404:
-          description: Artist was not found.
+          description: Artist
